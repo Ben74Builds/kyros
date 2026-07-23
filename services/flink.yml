@@ -1,0 +1,79 @@
+
+  jobmanager:
+    container_name: jobmanager
+    build:
+      context: ./docker/flink
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}flink:1.17.0-scala_2.12-java11
+    ports:
+      - "18081:8081"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - my-network
+    volumes:
+      - ./docker/flink/jobs:/opt/flink/jobs
+
+  taskmanager:
+    container_name: taskmanager
+    build:
+      context: ./docker/flink
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}flink:1.17.0-scala_2.12-java11
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 4
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "4.0"
+        reservations:
+          memory: 1G
+          cpus: "1.0"
+    networks:
+      - my-network
+    volumes:
+      - ./docker/flink/jobs:/opt/flink/jobs
+
+  sql-client:
+    container_name: sql-client
+    build:
+      context: ./docker/flink
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}flink:1.17.0-scala_2.12-java11
+    command: /bin/bash -c "bin/sql-client.sh"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+    networks:
+      - my-network

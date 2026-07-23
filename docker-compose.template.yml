@@ -1,0 +1,169 @@
+services:
+  web:
+    build:
+      context: ./docker/app
+      args:
+        IMAGE: 
+    container_name: web
+    ports:
+      - "5002:5000"
+    depends_on:
+      - spark-master
+{{SPARK_WORKER_DEPENDENCIES}}
+    networks:
+      - my-network
+
+{{ADDITIONAL_SERVICES}}
+
+  spark-master:
+    container_name: spark-master
+    build:
+      context: ./docker/spark-master
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}bitnami/spark:3.4.1
+    ports:
+      - 8080:8080  # Spark Master Web UI
+      - 7077:7077  # Spark Master Port
+      - 4040:4040  # Spark Master UI Port
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_UI_PORT=4040  # Explicitly set UI port for Spark Master
+    volumes:
+      - data:/home/jovyan/data
+      - lab:/home/jovyan/lab
+    networks:
+      - my-network
+
+{{SPARK_WORKER_SERVICES}}
+
+  # hive-metastore:
+  #   container_name: hive-metastore
+  #   build:
+  #     context: ./docker/hive-metastore
+  #   environment:
+  #     - HIVE_CONF_DIR=/opt/hive/conf
+  #     - "HIVE_METASTORE_URI=thrift://hive-metastore:9083"
+  #     - "HIVE_METASTORE_DB_TYPE=postgres"
+  #     - "HIVE_METASTORE_DB_HOST=postgres"
+  #     - "HIVE_METASTORE_DB_PORT=5432"
+  #     - "HIVE_METASTORE_DB_NAME=metastore"
+  #     - "HIVE_METASTORE_DB_USER=metastore_user"
+  #     - "HIVE_METASTORE_DB_PASSWORD=metastore_password"
+  #   ports:
+  #     - "9083:9083"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - my-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:9083 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+
+  # hive-server2:
+  #   image: apache/hive:4.0.0
+  #   container_name: hive-server2
+  #   environment:
+  #     - HIVE_CONF_DIR=/opt/hive/conf
+  #   ports:
+  #     - "10001:10000"
+  #   depends_on:
+  #     - hive-metastore
+  #     - postgres
+  #   networks:
+  #     - my-network
+  #   command: /opt/hive/bin/hive --service hiveserver2
+
+  hive-metastore:
+    container_name: hive-metastore
+    build:
+      context: ./docker/hive-metastore
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}apache/hive:4.0.0
+    environment:
+      - SERVICE_NAME=metastore
+      - HIVE_METASTORE_USER=metastore_user
+      - HIVE_METASTORE_PASSWORD=metastore_password
+      - HIVE_METASTORE_DB_TYPE=postgres
+      - HIVE_METASTORE_DB_HOST=postgres
+      - HIVE_METASTORE_DB_PORT=5432
+      - HIVE_METASTORE_DB_NAME=metastore
+      - HIVE_METASTORE_DB_USER=metastore_user
+      - HIVE_METASTORE_DB_PASSWORD=metastore_password
+    ports:
+      - "9083:9083"
+    depends_on:
+      - postgres
+    networks:
+      - my-network
+      
+  spark-thrift-server:
+    container_name: spark-thrift-server
+    build:
+      context: ./docker/spark-thrift-server
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}bitnami/spark:3.4.1
+        BASE_URL_JARS: ${BASE_URL_JARS}
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_HOME=/opt/bitnami/spark
+    depends_on:
+      - postgres
+      - spark-master
+      - spark-worker-1
+      - hive-metastore
+    ports:
+      - "10000:10000"
+    networks:
+      - my-network
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/data
+
+  lab:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/lab
+
+  dagster-project:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/orchestrate/dagster/${DAGSTER_WORKSPACE}
+
+  transform:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/transform
+  # delta_lake:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ${PWD}/delta_lake
+
+  # ZEPPELIN_VOLUME_PLACEHOLDER
+
+  minio-data:
+    driver: local
+
+  cloudbeaver_data:
+    driver: local
+
+networks:
+  my-network:
+    driver: bridge

@@ -1,0 +1,21 @@
+  portainer:
+    container_name: portainer
+    build:
+      context: ./docker/portainer
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}portainer/portainer-ce:2.21.1
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      #- portainer_data:/data
+    environment:
+      - ADMIN_PASSWORD=your_password
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - my-network

@@ -1,0 +1,17 @@
+  dbt:
+    container_name: dbt
+    build:
+      context: ./docker/dbt  # Points to the folder containing the Dockerfile
+      args: 
+        IMAGE: python:3.10-alpine
+    environment:
+      DBT_PROFILES_DIR: /usr/app/dbt/profiles
+      SPARK_HOST: spark-master
+      SPARK_PORT: 7077
+    volumes:
+      - ./data/dbt_project:/usr/app/dbt  # Mount your dbt project directory
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - my-network

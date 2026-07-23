@@ -1,0 +1,27 @@
+  sqlpad:
+    container_name: sqlpad
+    build:
+      context: ./docker/sqlpad
+      args:
+        IMAGE: ${IF_USING_LOCAL_REGISTRY}sqlpad/sqlpad:7.5.0
+    environment:
+      - SQLPAD_PORT=3001
+      - SQLPAD_ADMIN=admin@example.com
+      - SQLPAD_ADMIN_PASSWORD=admin
+      - SQLPAD_AUTH_DISABLED=false
+      - SQLPAD_BASE_URL=/sqlpad    # Base URL if behind a reverse proxy
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # volumes:
+    #   - ./docker/sqlpad/data:/var/lib/sqlpad  # Persistent storage for SQLPad data
+    networks:
+      - my-network
