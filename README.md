@@ -80,12 +80,17 @@ cd kyros
 
 **Option A: Use Makefile (Recommended)**
 ```bash
-make level-1    # Team: PostgreSQL + Dagster + Superset
-# or
-make level-2    # Data Lake: + MinIO + JupyterLab + Grafana
-# or
-make level-3    # Distributed: + Spark + Trino
+make level-0    # Local:       DuckDB + dbt — no infrastructure at all
+make level-1    # Team:        + PostgreSQL + Dagster + Superset
+make level-2    # Data Lake:   + MinIO + Delta Lake + JupyterLab + Grafana/Loki
+make level-3    # Distributed: + Spark cluster (2 workers) + Trino
+make level-4    # Enterprise:  + Kafka + Flink + SSO (3 Spark workers)
 ```
+
+Start at the level your data actually justifies, not the one that looks
+impressive. Level 0 is a real answer for most projects; you can move up in one
+command when a trigger below is met, and each level is a superset of the
+previous one.
 
 **Option B: Interactive CLI**
 ```bash
@@ -115,13 +120,21 @@ After deployment, access services at:
 
 ## Architecture Levels
 
-| Level | Name | What You Get | Data Size | Monthly Cost |
-|:-----:|------|--------------|-----------|--------------|
-| **0** | Local | DuckDB + dbt | < 50 GB | $0 |
-| **1** | Team | + PostgreSQL + Dagster + Superset + Portainer | < 500 GB | $20-100 |
-| **2** | Data Lake | + MinIO + JupyterLab + Grafana + Loki | < 1 TB | $50-150 |
-| **3** | Distributed | + Spark cluster + Trino + Code Server | 1+ TB | $150-500 |
-| **4** | Enterprise | + Kafka + Flink + full observability | Any | $500+ |
+Each level is a superset of the one before it. The last column is the part that
+matters: the trigger that justifies paying for the next level. Until one of them
+fires, moving up buys you operational burden and nothing else.
+
+| Level | Name | What You Get | Services | Data Size | Monthly Cost | Move up when |
+|:-----:|------|--------------|:--------:|-----------|--------------|--------------|
+| **0** | Local | DuckDB + dbt | 1 | < 50 GB | $0 | you need a shared database, dashboards or orchestration |
+| **1** | Team | + PostgreSQL + Dagster + Superset + Portainer | 8 | < 500 GB | $20-100 | you need object storage, notebooks or lakehouse tables |
+| **2** | Data Lake | + MinIO + Delta Lake + JupyterLab + Grafana + Loki | 13 | < 1 TB | $50-150 | you need distributed processing or federated queries |
+| **3** | Distributed | + Spark cluster (2 workers) + Trino + Code Server | 14 | 1+ TB | $150-500 | you need streaming or enterprise SSO |
+| **4** | Enterprise | + Kafka + Flink + SSO (3 Spark workers) | 16 | Any | $500+ | — full capability; use what you need |
+
+Spark is sized by the `WORKERS` setting in each preset: `0` up to level 2, `2`
+at level 3, `3` at level 4. No worker, no Spark cluster — the level presets
+control the compute, not just the service list.
 
 ### Level Selection Guide
 
