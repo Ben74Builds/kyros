@@ -387,3 +387,6 @@ spark-warehouse/
 
 # End of https://www.toptal.com/developers/gitignore/api/spark,jupyternotebooks,pycharm,pycharm+iml,pycharm+all*.key
 *.crt
+
+# Dagster local run artifacts — not source
+docker/dagster/**/history/**

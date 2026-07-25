@@ -72,7 +72,7 @@ Deploy the right architecture at the right time. Start simple, scale when needed
 
 ### 1. Clone and Navigate
 ```bash
-git clone https://github.com/benjamin-berhault/kyros.git
+git clone https://github.com/Ben74Builds/kyros.git
 cd kyros
 ```
 

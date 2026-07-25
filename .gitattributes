@@ -1,0 +1,6 @@
+# Language detection: this is a data platform, not a CSS project. The control
+# app's stylesheet and vendored front-end assets outweigh the Python/SQL/YAML
+# that actually make up the work, so exclude them from linguist's stats.
+docker/kyros/app/static/* linguist-vendored
+poc/app/static/*          linguist-vendored
+*.ico                     linguist-vendored
